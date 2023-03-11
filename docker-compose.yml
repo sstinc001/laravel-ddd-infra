@@ -1,0 +1,99 @@
+version: "3"
+
+services:
+
+#  proxy:
+
+#  cron:
+
+  mysql80:
+    container_name: ${SERVICE_NAME}_mysql80
+    hostname: ${SERVICE_NAME}_mysql80
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    build:
+      context: ./mysql80
+      dockerfile: dockerfile
+    tty: true
+    ports:
+      - "13306:3306"
+    privileged: true
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+      DB_HOST: ${DB_HOST}
+      TZ: ${TZ}
+    volumes:
+      - ${VAR}/lib/mysql80:/var/lib/mysql
+      - ${VAR}/log/mysql80/sql:/var/log/mysql
+      - ${TMP}:/tmp
+    networks:
+      container-link:
+        aliases:
+          - mysql80
+        ipv4_address: 172.21.100.12
+
+#  redis:
+
+#  memcached:
+
+  mail:
+    container_name: ${SERVICE_NAME}_mail
+    hostname: ${SERVICE_NAME}_mail
+    build:
+      context: ./mailhog
+      dockerfile: dockerfile
+    tty: true
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      container-link:
+        aliases:
+          - mail
+        ipv4_address: 172.21.100.22
+
+#  app:
+
+#  web:
+
+volumes:
+
+#  proxy:
+#    driver: ${VOLUMES_DRIVER}
+#  cron:
+#    driver: ${VOLUMES_DRIVER}
+  mysql80:
+    driver: ${VOLUMES_DRIVER}
+#  redis:
+#    driver: ${VOLUMES_DRIVER}
+#  memcached:
+#    driver: ${VOLUMES_DRIVER}
+  mail:
+    driver: ${VOLUMES_DRIVER}
+#  app:
+#    driver: ${VOLUMES_DRIVER}
+#  web:
+#    driver: ${VOLUMES_DRIVER}
+
+networks:
+
+  # region auto
+  # docker-composeで勝手にデフォルトネットワークが生成される予防。（自動で全コンテナが所属するbridgeを指定）
+  default:
+    external: true
+    name: bridge
+  # endregion auto
+
+  # region container network
+  # コンテナ間通信用のネットワークセグメント
+  container-link:
+    name: container-link
+    # 以下は書かなくてもよい（サンプルとして）
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.21.100.0/24"
+  # endregion container network
