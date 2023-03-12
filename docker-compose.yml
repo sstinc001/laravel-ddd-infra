@@ -124,7 +124,29 @@ services:
           - app
         ipv4_address: 172.21.100.32
 
-#  web:
+  web:
+    container_name: ${SERVICE_NAME}_web
+    hostname: ${SERVICE_NAME}_web
+    build:
+      context: ./node
+      dockerfile: dockerfile
+      args:
+        LOCAL_UID: ${APACHE_LOCAL_UID}
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${TMP}:/tmp
+      - ../web:/var/www/web:cached
+    command: sh -c "cd /var/www/web && yarn start"
+#    command: sh -c "cd /var/www/web"
+    tty: true
+    depends_on:
+      - app
+    networks:
+      container-link:
+        aliases:
+          - web
+        ipv4_address: 172.21.100.33
 
 ## endregion ip 3x
 
