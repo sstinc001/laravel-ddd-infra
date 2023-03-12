@@ -2,9 +2,15 @@ version: "3"
 
 services:
 
+## region ip 0x
+
 #  proxy:
 
 #  cron:
+
+## endregion ip 0x
+
+## region ip 1x
 
   mysql80:
     container_name: ${SERVICE_NAME}_mysql80
@@ -34,9 +40,45 @@ services:
           - mysql80
         ipv4_address: 172.21.100.12
 
-#  redis:
+  redis:
+    container_name: ${SERVICE_NAME}_redis
+    hostname: ${SERVICE_NAME}_redis
+    build:
+      context: ./redis
+      dockerfile: dockerfile
+    tty: true
+    user: redis
+    ports:
+      - "6379:6379"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${STORAGE}/redis/:/data
+    networks:
+      container-link:
+        aliases:
+          - redis
+        ipv4_address: 172.21.100.13
 
-#  memcached:
+  memcached:
+    container_name: ${SERVICE_NAME}_memcached
+    hostname: ${SERVICE_NAME}_memcached
+    build:
+      context: ./memcached
+      dockerfile: dockerfile
+    ports:
+      - "11211:11211"
+    environment:
+      TZ: ${TZ}
+    networks:
+      container-link:
+        aliases:
+          - memcached
+        ipv4_address: 172.21.100.14
+
+## endregion ip 1x
+
+## region ip 2x
 
   mail:
     container_name: ${SERVICE_NAME}_mail
@@ -54,9 +96,40 @@ services:
           - mail
         ipv4_address: 172.21.100.22
 
-#  app:
+## endregion ip 2x
+
+## region ip 3x
+
+  app:
+    container_name: ${SERVICE_NAME}_app
+    hostname: ${SERVICE_NAME}_app
+    build:
+      context: ./app
+      dockerfile: dockerfile
+      args:
+        LOCAL_UID: ${APACHE_LOCAL_UID}
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${TMP}:/tmp
+      - ../app:/var/www/app
+      - ${VAR}/log/app:/var/www/app/storage/logs
+    depends_on:
+      - mysql80
+      - redis
+      - memcached
+    networks:
+      container-link:
+        aliases:
+          - app
+        ipv4_address: 172.21.100.32
 
 #  web:
+
+## endregion ip 3x
+
+## region ip 4x
+## endregion ip 4x
 
 volumes:
 

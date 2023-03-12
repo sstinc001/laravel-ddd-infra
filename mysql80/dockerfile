@@ -1,7 +1,7 @@
 FROM mysql:8.0.14
 
 # author
-MAINTAINER  mori
+MAINTAINER mori <n.mori@unified.jp>
 
 ENV LC_ALL C.UTF-8
 

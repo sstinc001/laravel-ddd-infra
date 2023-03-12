@@ -1,0 +1,13 @@
+FROM redis:latest
+
+# author
+MAINTAINER mori <n.mori@unified.jp>
+
+RUN apt-get update -y && \
+    apt-get install -y \
+    sudo \
+    wget \
+    git \
+    watch \
+    vim
+

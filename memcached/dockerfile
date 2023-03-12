@@ -1,0 +1,7 @@
+FROM memcached:latest
+
+# author
+MAINTAINER mori <n.mori@unified.jp>
+
+#RUN apt-get update
+#RUN apt-get install -y sudo
