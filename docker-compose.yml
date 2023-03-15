@@ -4,7 +4,47 @@ services:
 
 ## region ip 0x misc
 
-#  proxy:
+  proxy:
+    container_name: ${SERVICE_NAME}_proxy
+    hostname: ${SERVICE_NAME}_proxy
+    build:
+      context: ./proxy
+      dockerfile: dockerfile
+      args:
+        LOCAL_UID: ${NGINX_LOCAL_UID}
+        LOCAL_USER_NAME: ${NGINX_LOCAL_USER_NAME}
+        LOCAL_GID: ${NGINX_LOCAL_GID}
+        LOCAL_GROUP_NAME: ${NGINX_LOCAL_GROUP_NAME}
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAINS: >
+        ${DOMAINS}
+      STAGE: ${STAGE}
+      PROXY_CONNECT_TIMEOUT: 600
+      PROXY_SEND_TIMEOUT: 600
+      PROXY_READ_TIMEOUT: 600
+      CLIENT_MAX_BODY_SIZE: 102400M
+      WEBSOCKET: "true"
+      HSTS_MAX_AGE: 60
+#      FORCE_RENEW: 'true'
+      ERROR_LOG: default
+      ACCESS_LOG: default
+      TZ: ${TZ}
+    volumes:
+      - ${STORAGE}/proxy/certs:/var/lib/https-portal
+      - ${VAR}/log/proxy:/var/log/nginx
+#      - ../credential/entrypoint.sh:/var/tmp/entrypoint.sh
+    depends_on:
+      - nginx
+      - node
+    networks:
+      container-link:
+        aliases:
+          - proxy
+        ipv4_address: 172.21.100.2
 
 #  cron:
 
@@ -124,6 +164,31 @@ services:
           - app
         ipv4_address: 172.21.100.32
 
+  node:
+    container_name: ${SERVICE_NAME}_node
+    hostname: ${SERVICE_NAME}_node
+    build:
+      context: ./node
+      dockerfile: dockerfile
+      args:
+        LOCAL_UID: ${APACHE_LOCAL_UID}
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${TMP}:/tmp
+      - ../web:/var/www/node:cached
+    command: sh -c "cd /var/www/node && yarn install; yarn dev;"
+    tty: true
+    depends_on:
+      - php
+    networks:
+      container-link:
+        aliases:
+          - web
+        ipv4_address: 172.21.100.33
+
   nginx:
     container_name: ${SERVICE_NAME}_nginx
     hostname: ${SERVICE_NAME}_nginx
@@ -147,34 +212,6 @@ services:
           - nginx
         ipv4_address: 172.21.100.31
 
-  node:
-    container_name: ${SERVICE_NAME}_node
-    hostname: ${SERVICE_NAME}_node
-    build:
-      context: ./node
-      dockerfile: dockerfile
-      args:
-        LOCAL_UID: ${APACHE_LOCAL_UID}
-    environment:
-      TZ: ${TZ}
-    ports:
-      - "3000:3000"
-    volumes:
-      - ${TMP}:/tmp
-      - ../web:/var/www/node:cached
-      - ../web2:/var/www/node2:cached
-#    command: sh -c "cd /var/www/node && yarn start"
-    command: sh -c "cd /var/www/node && yarn install; yarn dev;"
-#    command: sh -c "cd /var/www/node"
-    tty: true
-    depends_on:
-      - php
-    networks:
-      container-link:
-        aliases:
-          - web
-        ipv4_address: 172.21.100.33
-
 ## endregion ip 3x app
 
 ## region ip 4x
@@ -194,11 +231,11 @@ volumes:
     driver: ${VOLUMES_DRIVER}
   mail:
     driver: ${VOLUMES_DRIVER}
-#  nginx:
-#    driver: ${VOLUMES_DRIVER}
-  app:
+  php:
     driver: ${VOLUMES_DRIVER}
-  web:
+  nginx:
+    driver: ${VOLUMES_DRIVER}
+  node:
     driver: ${VOLUMES_DRIVER}
 
 networks:
