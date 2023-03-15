@@ -2,15 +2,15 @@ version: "3"
 
 services:
 
-## region ip 0x
+## region ip 0x misc
 
 #  proxy:
 
 #  cron:
 
-## endregion ip 0x
+## endregion ip 0x misc
 
-## region ip 1x
+## region ip 1x database
 
   mysql80:
     container_name: ${SERVICE_NAME}_mysql80
@@ -76,9 +76,9 @@ services:
           - memcached
         ipv4_address: 172.21.100.14
 
-## endregion ip 1x
+## endregion ip 1x database
 
-## region ip 2x
+## region ip 2x mail
 
   mail:
     container_name: ${SERVICE_NAME}_mail
@@ -96,15 +96,15 @@ services:
           - mail
         ipv4_address: 172.21.100.22
 
-## endregion ip 2x
+## endregion ip 2x mail
 
-## region ip 3x
+## region ip 3x app
 
-  app:
-    container_name: ${SERVICE_NAME}_app
-    hostname: ${SERVICE_NAME}_app
+  php:
+    container_name: ${SERVICE_NAME}_php
+    hostname: ${SERVICE_NAME}_php
     build:
-      context: ./app
+      context: ./php
       dockerfile: dockerfile
       args:
         LOCAL_UID: ${APACHE_LOCAL_UID}
@@ -112,8 +112,8 @@ services:
       TZ: ${TZ}
     volumes:
       - ${TMP}:/tmp
-      - ../app:/var/www/app
-      - ${VAR}/log/app:/var/www/app/storage/logs
+      - ../app:/var/www/php
+      - ${VAR}/log/php:/var/www/php/storage/logs
     depends_on:
       - mysql80
       - redis
@@ -124,9 +124,32 @@ services:
           - app
         ipv4_address: 172.21.100.32
 
-  web:
-    container_name: ${SERVICE_NAME}_web
-    hostname: ${SERVICE_NAME}_web
+  nginx:
+    container_name: ${SERVICE_NAME}_nginx
+    hostname: ${SERVICE_NAME}_nginx
+    build:
+      context: ./nginx
+      dockerfile: dockerfile
+      args:
+        LOCAL_UID: ${APACHE_LOCAL_UID}
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${VAR}/log/nginx:/var/log/nginx
+      - ../app:/var/www/php
+    depends_on:
+      - php
+    networks:
+      container-link:
+        aliases:
+          - nginx
+        ipv4_address: 172.21.100.31
+
+  node:
+    container_name: ${SERVICE_NAME}_node
+    hostname: ${SERVICE_NAME}_node
     build:
       context: ./node
       dockerfile: dockerfile
@@ -134,21 +157,25 @@ services:
         LOCAL_UID: ${APACHE_LOCAL_UID}
     environment:
       TZ: ${TZ}
+    ports:
+      - "3000:3000"
     volumes:
       - ${TMP}:/tmp
-      - ../web:/var/www/web:cached
-    command: sh -c "cd /var/www/web && yarn start"
-#    command: sh -c "cd /var/www/web"
+      - ../web:/var/www/node:cached
+      - ../web2:/var/www/node2:cached
+#    command: sh -c "cd /var/www/node && yarn start"
+    command: sh -c "cd /var/www/node && yarn install; yarn dev;"
+#    command: sh -c "cd /var/www/node"
     tty: true
     depends_on:
-      - app
+      - php
     networks:
       container-link:
         aliases:
           - web
         ipv4_address: 172.21.100.33
 
-## endregion ip 3x
+## endregion ip 3x app
 
 ## region ip 4x
 ## endregion ip 4x
@@ -161,16 +188,18 @@ volumes:
 #    driver: ${VOLUMES_DRIVER}
   mysql80:
     driver: ${VOLUMES_DRIVER}
-#  redis:
-#    driver: ${VOLUMES_DRIVER}
-#  memcached:
-#    driver: ${VOLUMES_DRIVER}
+  redis:
+    driver: ${VOLUMES_DRIVER}
+  memcached:
+    driver: ${VOLUMES_DRIVER}
   mail:
     driver: ${VOLUMES_DRIVER}
-#  app:
+#  nginx:
 #    driver: ${VOLUMES_DRIVER}
-#  web:
-#    driver: ${VOLUMES_DRIVER}
+  app:
+    driver: ${VOLUMES_DRIVER}
+  web:
+    driver: ${VOLUMES_DRIVER}
 
 networks:
 
