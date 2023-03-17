@@ -42,6 +42,6 @@ RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources
 
 RUN apt-get update && apt-get install -y yarn
 
-WORKDIR /var/www/app
-RUN chown -R www-data:www-data /var/www/app
+WORKDIR /var/www/php
+RUN chown -R www-data:www-data /var/www/php
 ENTRYPOINT [ "bash", "-c", "composer install; yarn install; yarn dev & exec php-fpm;" ]

@@ -15,6 +15,7 @@ RUN apt-get update -y && \
 
 CMD bash -E /var/tmp/entrypoint.sh && /bin/bash
 
+COPY init /docker-entrypoint-initdb.d
 COPY conf.d/mysql.cnf /etc/mysql/conf.d/mysql.cnf
 COPY conf.d/mysqldump.cnf /etc/mysql/conf.d/mysqldump.cnf
 COPY conf.d/mysqld.cnf /etc/mysql/conf.d/mysqld.cnf
