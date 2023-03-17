@@ -1,0 +1,11 @@
+FROM steveltn/https-portal:1
+
+RUN apt-get update && \
+    apt-get -y install \
+        gcc \
+        vim \
+        sudo \
+        git \
+        zip \
+        unzip \
+        curl

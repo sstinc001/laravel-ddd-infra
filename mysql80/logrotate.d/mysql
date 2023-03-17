@@ -1,0 +1,37 @@
+/var/log/mysql/error.log
+/var/log/mysql/slow.log
+{
+    create 644 mysql mysql
+    notifempty
+    daily
+    rotate 30
+    missingok
+    nocompress
+    dateext
+    sharedscripts
+    postrotate
+    if test -x /usr/bin/mysqladmin && \
+        /usr/bin/mysqladmin ping &>/dev/null
+    then
+        /usr/bin/mysqladmin --defaults-extra-file=/root/.my.cnf flush-logs
+    fi
+    endscript
+}
+
+/var/log/mysql/query.log
+{
+    create 644 mysql mysql
+    notifempty
+    daily
+    rotate 30
+    missingok
+    nocompress
+    dateext
+    postrotate
+    if test -x /usr/bin/mysqladmin && \
+        /usr/bin/mysqladmin ping &>/dev/null
+    then
+        /usr/bin/mysqladmin --defaults-extra-file=/root/.my.cnf flush-logs
+    fi
+    endscript
+}

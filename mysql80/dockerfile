@@ -1,0 +1,35 @@
+FROM mysql:8.0.14
+
+# author
+MAINTAINER mori <n.mori@unified.jp>
+
+ENV LC_ALL C.UTF-8
+
+RUN apt-get update -y && \
+    apt-get install -y sudo \
+    git \
+    wget \
+    logrotate \
+    watch \
+    vim
+
+CMD bash -E /var/tmp/entrypoint.sh && /bin/bash
+
+COPY init /docker-entrypoint-initdb.d
+COPY conf.d/mysql.cnf /etc/mysql/conf.d/mysql.cnf
+COPY conf.d/mysqldump.cnf /etc/mysql/conf.d/mysqldump.cnf
+COPY conf.d/mysqld.cnf /etc/mysql/conf.d/mysqld.cnf
+COPY logrotate.d/mysql /etc/logrotate.d/mysql
+RUN chmod 0644 /etc/logrotate.d/*
+
+RUN chmod 644 /etc/mysql/conf.d/mysql.cnf \
+    && chmod 644 /etc/mysql/conf.d/mysqldump.cnf \
+    && chmod 644 /etc/mysql/conf.d/mysqld.cnf
+
+WORKDIR /root
+
+#---------------------
+# SET PORT
+#---------------------
+EXPOSE 3306
+CMD ["mysqld"]
