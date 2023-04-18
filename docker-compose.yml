@@ -2,7 +2,7 @@ version: "3"
 
 services:
 
-## region ip 0x misc
+## region misc
 
   proxy:
     container_name: ${SERVICE_NAME}_proxy
@@ -15,6 +15,7 @@ services:
         LOCAL_USER_NAME: ${NGINX_LOCAL_USER_NAME}
         LOCAL_GID: ${NGINX_LOCAL_GID}
         LOCAL_GROUP_NAME: ${NGINX_LOCAL_GROUP_NAME}
+    image: ${SERVICE_NAME}_proxy
     restart: always
     ports:
       - "80:80"
@@ -44,13 +45,28 @@ services:
       container-link:
         aliases:
           - proxy
-        ipv4_address: 172.21.100.2
+
+  mail:
+    container_name: ${SERVICE_NAME}_mail
+    hostname: ${SERVICE_NAME}_mail
+    build:
+      context: ./mailhog
+      dockerfile: dockerfile
+    image: ${SERVICE_NAME}_mailhog
+    tty: true
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      container-link:
+        aliases:
+          - mail
 
 #  cron:
 
-## endregion ip 0x misc
+## endregion misc
 
-## region ip 1x database
+## region database
 
   mysql80:
     container_name: ${SERVICE_NAME}_mysql80
@@ -59,6 +75,7 @@ services:
     build:
       context: ./mysql80
       dockerfile: dockerfile
+    image: ${SERVICE_NAME}_mysql80
     tty: true
     ports:
       - "13306:3306"
@@ -79,7 +96,6 @@ services:
       container-link:
         aliases:
           - mysql80
-        ipv4_address: 172.21.100.12
 
   redis:
     container_name: ${SERVICE_NAME}_redis
@@ -87,6 +103,7 @@ services:
     build:
       context: ./redis
       dockerfile: dockerfile
+    image: ${SERVICE_NAME}_redis
     tty: true
     user: redis
     ports:
@@ -99,7 +116,6 @@ services:
       container-link:
         aliases:
           - redis
-        ipv4_address: 172.21.100.13
 
   memcached:
     container_name: ${SERVICE_NAME}_memcached
@@ -107,6 +123,7 @@ services:
     build:
       context: ./memcached
       dockerfile: dockerfile
+    image: ${SERVICE_NAME}_memcached
     ports:
       - "11211:11211"
     environment:
@@ -115,31 +132,10 @@ services:
       container-link:
         aliases:
           - memcached
-        ipv4_address: 172.21.100.14
 
-## endregion ip 1x database
+## endregion database
 
-## region ip 2x mail
-
-  mail:
-    container_name: ${SERVICE_NAME}_mail
-    hostname: ${SERVICE_NAME}_mail
-    build:
-      context: ./mailhog
-      dockerfile: dockerfile
-    tty: true
-    ports:
-      - "8025:8025"
-      - "1025:1025"
-    networks:
-      container-link:
-        aliases:
-          - mail
-        ipv4_address: 172.21.100.22
-
-## endregion ip 2x mail
-
-## region ip 3x app
+## region application
 
   php:
     container_name: ${SERVICE_NAME}_php
@@ -149,6 +145,7 @@ services:
       dockerfile: dockerfile
       args:
         LOCAL_UID: ${APACHE_LOCAL_UID}
+    image: ${SERVICE_NAME}_php
     environment:
       TZ: ${TZ}
     volumes:
@@ -163,7 +160,6 @@ services:
       container-link:
         aliases:
           - app
-        ipv4_address: 172.21.100.32
 
   node:
     container_name: ${SERVICE_NAME}_node
@@ -173,6 +169,7 @@ services:
       dockerfile: dockerfile
       args:
         LOCAL_UID: ${APACHE_LOCAL_UID}
+    image: ${SERVICE_NAME}_node
     environment:
       TZ: ${TZ}
     ports:
@@ -188,7 +185,6 @@ services:
       container-link:
         aliases:
           - web
-        ipv4_address: 172.21.100.33
 
   nginx:
     container_name: ${SERVICE_NAME}_nginx
@@ -198,6 +194,7 @@ services:
       dockerfile: dockerfile
       args:
         LOCAL_UID: ${APACHE_LOCAL_UID}
+    image: ${SERVICE_NAME}_nginx
     environment:
       TZ: ${TZ}
     ports:
@@ -211,12 +208,11 @@ services:
       container-link:
         aliases:
           - nginx
-        ipv4_address: 172.21.100.31
 
-## endregion ip 3x app
+## endregion application
 
-## region ip 4x
-## endregion ip 4x
+## region 4x
+## endregion 4x
 
 volumes:
 
@@ -251,11 +247,11 @@ networks:
   # region container network
   # コンテナ間通信用のネットワークセグメント
   container-link:
-    name: container-link
+    name: ${SERVICE_NAME}_container-link
     # 以下は書かなくてもよい（サンプルとして）
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: "172.21.100.0/24"
+#    driver: bridge
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: "172.21.100.0/24"
   # endregion container network
