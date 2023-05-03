@@ -179,7 +179,7 @@ services:
     volumes:
       - ${TMP}:/tmp
       - ../web:/var/www/node:cached
-    command: sh -c "cd /var/www/node && npm install; npm run dev && npm run storybook;"
+    command: sh -c "cd /var/www/node && npm install; npm run dev;"
     tty: true
     depends_on:
       - php
