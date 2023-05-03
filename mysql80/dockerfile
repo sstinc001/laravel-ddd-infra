@@ -5,6 +5,7 @@ MAINTAINER mori <n.mori@unified.jp>
 
 ENV LC_ALL C.UTF-8
 
+COPY apt/sources.list /etc/apt/sources.list
 RUN apt-get update -y && \
     apt-get install -y sudo \
     git \

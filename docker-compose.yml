@@ -174,10 +174,12 @@ services:
       TZ: ${TZ}
     ports:
       - "3000:3000"
+      - "5173:5173"
+      - "6006:6006"
     volumes:
       - ${TMP}:/tmp
       - ../web:/var/www/node:cached
-    command: sh -c "cd /var/www/node && yarn install; yarn dev;"
+    command: sh -c "cd /var/www/node && npm install; npm run dev && npm run storybook;"
     tty: true
     depends_on:
       - php

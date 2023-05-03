@@ -16,4 +16,4 @@ laravelでクリーンアーキテクチャを学習するためのリポジト�
 ↑の手順だとnodeのコンテナが起動しないので、初回のみ下記コマンドを実行して最低限のファイルを用意します。<br>
 ファイルができてからは実行する必要が無いです
 
-`docker-compose run --rm node sh -c 'yarn create vite . --template react-ts'`
+`docker-compose run --rm node sh -c 'npm create vite@latest . -- --template react-ts'`
