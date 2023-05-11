@@ -211,6 +211,23 @@ services:
         aliases:
           - nginx
 
+  flutter:
+    container_name: ${SERVICE_NAME}_flutter
+    hostname: ${SERVICE_NAME}_flutter
+    build:
+      context: ./flutter
+      dockerfile: dockerfile
+    image: ${SERVICE_NAME}_flutter
+    volumes:
+      - ../flutter:/workspace/board_game_direct
+    command: /bin/sh -c "while sleep 1000; do :; done"
+      # 3: 環境変数の定義ファイルを指定
+    env_file:
+      - ./flutter/.flutter.env
+    networks:
+      container-link:
+        aliases:
+          - flutter
 ## endregion application
 
 ## region 4x
