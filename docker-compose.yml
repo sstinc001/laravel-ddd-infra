@@ -40,11 +40,14 @@ services:
 #      - ../credential/entrypoint.sh:/var/tmp/entrypoint.sh
     depends_on:
       - nginx
-      - node
+      - react
     networks:
       container-link:
         aliases:
           - proxy
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.2
+    extra_hosts:
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
 
   mail:
     container_name: ${SERVICE_NAME}_mail
@@ -61,6 +64,9 @@ services:
       container-link:
         aliases:
           - mail
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.3
+    extra_hosts:
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
 
 #  cron:
 
@@ -96,6 +102,12 @@ services:
       container-link:
         aliases:
           - mysql80
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.12
+    extra_hosts:
+      - proxy.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - www.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - story.ddd.local:${CONTAINER_LINK_SUBNET}.2
 
   redis:
     container_name: ${SERVICE_NAME}_redis
@@ -116,6 +128,12 @@ services:
       container-link:
         aliases:
           - redis
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.13
+    extra_hosts:
+      - proxy.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - www.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - story.ddd.local:${CONTAINER_LINK_SUBNET}.2
 
   memcached:
     container_name: ${SERVICE_NAME}_memcached
@@ -132,10 +150,16 @@ services:
       container-link:
         aliases:
           - memcached
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.14
+    extra_hosts:
+      - proxy.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - www.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
+      - story.ddd.local:${CONTAINER_LINK_SUBNET}.2
 
 ## endregion database
 
-## region application
+## region backend
 
   php:
     container_name: ${SERVICE_NAME}_php
@@ -148,6 +172,8 @@ services:
     image: ${SERVICE_NAME}_php
     environment:
       TZ: ${TZ}
+    ports:
+      - "9000:9000"
     volumes:
       - ${TMP}:/tmp
       - ../app:/var/www/php
@@ -160,33 +186,9 @@ services:
       container-link:
         aliases:
           - app
-
-  node:
-    container_name: ${SERVICE_NAME}_node
-    hostname: ${SERVICE_NAME}_node
-    build:
-      context: ./node
-      dockerfile: dockerfile
-      args:
-        LOCAL_UID: ${APACHE_LOCAL_UID}
-    image: ${SERVICE_NAME}_node
-    environment:
-      TZ: ${TZ}
-    ports:
-      - "3000:3000"
-      - "5173:5173"
-      - "6006:6006"
-    volumes:
-      - ${TMP}:/tmp
-      - ../web:/var/www/node:cached
-    command: sh -c "cd /var/www/node && npm install; npm run dev;"
-    tty: true
-    depends_on:
-      - php
-    networks:
-      container-link:
-        aliases:
-          - web
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.22
+    extra_hosts:
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
 
   nginx:
     container_name: ${SERVICE_NAME}_nginx
@@ -210,35 +212,76 @@ services:
       container-link:
         aliases:
           - nginx
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.23
+    extra_hosts:
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
 
-  flutter:
-    container_name: ${SERVICE_NAME}_flutter
-    hostname: ${SERVICE_NAME}_flutter
+## endregion backend
+
+## region frontend
+
+  vue:
+    container_name: ${SERVICE_NAME}_vue
+    hostname: ${SERVICE_NAME}_vue
     build:
-      context: ./flutter
+      context: ./vue
       dockerfile: dockerfile
-    image: ${SERVICE_NAME}_flutter
+      args:
+        LOCAL_UID: ${APACHE_LOCAL_UID}
+    image: ${SERVICE_NAME}_vue
+    environment:
+      TZ: ${TZ}
     volumes:
-      - ../flutter:/workspace/board_game_direct
-    command: /bin/sh -c "while sleep 1000; do :; done"
-      # 3: 環境変数の定義ファイルを指定
-    env_file:
-      - ./flutter/.flutter.env
+      - ${TMP}:/tmp
+      - ../vue:/var/www/vue:cached
+    command: sh -c "cd /var/www/vue && yarn install; yarn dev;"
+    tty: true
+    ports:
+      - "3000:3000"
+      - "6006:6006"
+    depends_on:
+      - php
     networks:
       container-link:
         aliases:
-          - flutter
-## endregion application
+          - vue
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.32
 
-## region 4x
-## endregion 4x
+  react:
+    container_name: ${SERVICE_NAME}_react
+    hostname: ${SERVICE_NAME}_react
+    build:
+      context: ./react
+      dockerfile: dockerfile
+      args:
+        LOCAL_UID: ${APACHE_LOCAL_UID}
+    image: ${SERVICE_NAME}_react
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "3001:3001"
+      - "6007:6007"
+    volumes:
+      - ${TMP}:/tmp
+      - ../react:/var/www/react:cached
+#    command: sh -c "cd /var/www/react && npm install; npm run dev;"
+    tty: true
+    depends_on:
+      - php
+    networks:
+      container-link:
+        aliases:
+          - react
+        ipv4_address: ${CONTAINER_LINK_SUBNET}.33
+    extra_hosts:
+      - api.ddd.local:${CONTAINER_LINK_SUBNET}.2
+
+## endregion frontend
 
 volumes:
 
-#  proxy:
-#    driver: ${VOLUMES_DRIVER}
-#  cron:
-#    driver: ${VOLUMES_DRIVER}
+  proxy:
+    driver: ${VOLUMES_DRIVER}
   mysql80:
     driver: ${VOLUMES_DRIVER}
   redis:
@@ -251,7 +294,9 @@ volumes:
     driver: ${VOLUMES_DRIVER}
   nginx:
     driver: ${VOLUMES_DRIVER}
-  node:
+  react:
+    driver: ${VOLUMES_DRIVER}
+  vue:
     driver: ${VOLUMES_DRIVER}
 
 networks:
@@ -268,9 +313,11 @@ networks:
   container-link:
     name: ${SERVICE_NAME}_container-link
     # 以下は書かなくてもよい（サンプルとして）
-#    driver: bridge
-#    ipam:
-#      driver: default
-#      config:
-#        - subnet: "172.21.100.0/24"
+    driver: bridge
+#    external: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "${CONTAINER_LINK_SUBNET}.0/24"
+
   # endregion container network
